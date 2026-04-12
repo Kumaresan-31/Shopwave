@@ -1,0 +1,9 @@
+{
+  "name": "shopwave-backend",
+  "version": "2.0.0",
+  "description": "ShopWave Backend Server",
+  "main": "server.js",
+  "scripts": {
+    "start": "PowerShell -Command \"Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }; node server.js\""
+  }
+}
