@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShopWave - Admin Dashboard</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌊</text></svg>">
+</head>
+<body>
+  <nav class="navbar">
+    <a class="nav-brand" href="/"><span class="wave">🌊</span><span>ShopWave</span> <span style="font-size:0.7rem;background:var(--accent-coral);padding:2px 8px;border-radius:50px;color:#fff;margin-left:8px;-webkit-text-fill-color:#fff">ADMIN</span></a>
+    <div class="nav-actions">
+      <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle Light/Dark Mode">
+        <div class="toggle-thumb" id="themeThumb">🌙</div>
+      </button>
+      <a href="/"><button class="nav-btn" title="View Store">🏪</button></a>
+      <button class="nav-btn" onclick="adminLogout()" title="Logout">🚪</button>
+    </div>
+  </nav>
+
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <div class="nav-item active" onclick="showAdminPage('dashboard')"><span class="icon">📊</span>Dashboard</div>
+      <div class="nav-item" onclick="showAdminPage('products')"><span class="icon">📦</span>Products</div>
+      <div class="nav-item" onclick="showAdminPage('orders')"><span class="icon">🛍️</span>Orders</div>
+      <div class="nav-item" onclick="showAdminPage('returns')"><span class="icon">🔄</span>Returns</div>
+      <div class="nav-item" onclick="showAdminPage('users')"><span class="icon">👥</span>Users</div>
+      <div class="nav-item" onclick="showAdminPage('inventory')"><span class="icon">📋</span>Inventory</div>
+      <div class="nav-item" onclick="showAdminPage('fraud')"><span class="icon">🛡️</span>Fraud Detection</div>
+      <div class="nav-item" onclick="showAdminPage('coupons')"><span class="icon">🎟️</span>Coupons</div>
+    </aside>
+
+    <main class="admin-main" id="adminContent">
+      <div class="loading-spinner"><div class="spinner"></div></div>
+    </main>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Add Product Modal -->
+  <div class="modal-overlay" id="addProductModal" onclick="if(event.target===this)this.classList.remove('active')">
+    <div class="modal" style="max-width:600px">
+      <button class="modal-close" onclick="document.getElementById('addProductModal').classList.remove('active')">✕</button>
+      <div style="padding:2rem">
+        <h2 style="margin-bottom:1.5rem">Add New Product</h2>
+        <div class="form-row">
+          <div class="form-group"><label>Product Name</label><input type="text" id="npName"></div>
+          <div class="form-group"><label>Brand</label><input type="text" id="npBrand"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Price (₹)</label><input type="number" id="npPrice"></div>
+          <div class="form-group"><label>Original Price (₹)</label><input type="number" id="npOriginalPrice"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Category</label>
+            <select id="npCategory" style="width:100%;padding:12px;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:8px;color:var(--text-primary)"></select>
+          </div>
+          <div class="form-group"><label>Stock</label><input type="number" id="npStock"></div>
+        </div>
+        <div class="form-group"><label>Description</label><textarea id="npDescription" rows="3" style="width:100%;padding:12px;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:8px;color:var(--text-primary);font-family:Inter,sans-serif;resize:vertical"></textarea></div>
+        <div class="form-group">
+          <label>Product Image</label>
+          <div id="npImageUploadArea" onclick="document.getElementById('npImageFile').click()" style="border:2px dashed var(--border-glass);border-radius:12px;padding:1.5rem;text-align:center;cursor:pointer;transition:border-color 0.2s;background:var(--bg-glass);position:relative;" onmouseover="this.style.borderColor='var(--accent-purple)'" onmouseout="this.style.borderColor='var(--border-glass)'">
+            <img id="npImagePreview" src="" alt="" style="display:none;max-height:160px;max-width:100%;border-radius:8px;margin-bottom:0.75rem;object-fit:cover">
+            <div id="npImagePlaceholder" style="color:var(--text-secondary)">
+              <div style="font-size:2.5rem;margin-bottom:0.5rem">📷</div>
+              <div style="font-size:0.95rem;font-weight:500">Click to upload product image</div>
+              <div style="font-size:0.8rem;margin-top:0.25rem;opacity:0.6">PNG, JPG, WEBP up to 10MB</div>
+            </div>
+            <input type="file" id="npImageFile" accept="image/*" style="display:none" onchange="handleImageSelect(event)">
+          </div>
+        </div>
+        <div class="form-group"><label>Tags (comma separated)</label><input type="text" id="npTags" placeholder="electronics, premium, ..."></div>
+        <div class="form-group"><label><input type="checkbox" id="npFeatured" style="accent-color:var(--accent-purple)"> Featured Product</label></div>
+        <button class="btn-primary" style="width:100%" id="npSubmitBtn" onclick="addProduct()">Add Product</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API = 'http://localhost:3000/api';
+    const token = localStorage.getItem('shopwave_token');
+    let dashboardData = null;
+
+    if (!token) window.location.href = '/login.html';
+
+    function authHeaders() { return { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }; }
+
+    function showToast(msg, type='info') {
+      const c = document.getElementById('toastContainer');
+      const t = document.createElement('div');
+      t.className = `toast ${type}`;
+      t.innerHTML = `${type==='success'?'✅':type==='error'?'❌':'ℹ️'} ${msg}`;
+      c.appendChild(t);
+      setTimeout(() => { t.style.opacity='0'; setTimeout(()=>t.remove(),300); }, 3000);
+    }
+
+    // Verify admin access
+    fetch(`${API}/auth/me`, { headers: authHeaders() })
+      .then(r => r.json()).then(d => {
+        if (!d.user || d.user.role !== 'admin') { window.location.href = '/'; return; }
+        loadDashboard();
+      }).catch(() => window.location.href = '/login.html');
+
+    function showAdminPage(page) {
+      document.querySelectorAll('.admin-sidebar .nav-item').forEach(n => n.classList.remove('active'));
+      event.target.closest('.nav-item').classList.add('active');
+      switch(page) {
+        case 'dashboard': loadDashboard(); break;
+        case 'products': loadAdminProducts(); break;
+        case 'orders': loadAdminOrders(); break;
+        case 'returns': loadAdminReturns(); break;
+        case 'users': loadAdminUsers(); break;
+        case 'inventory': loadInventory(); break;
+        case 'fraud': loadFraudDetection(); break;
+        case 'coupons': loadCoupons(); break;
+      }
+    }
+
+    async function loadDashboard() {
+      try {
+        const res = await fetch(`${API}/admin/dashboard`, { headers: authHeaders() });
+        dashboardData = await res.json();
+        const d = dashboardData;
+        const maxRev = Math.max(...d.salesData.map(s => s.revenue));
+        document.getElementById('adminContent').innerHTML = `
+          <h1 style="margin-bottom:2rem">📊 Dashboard Overview</h1>
+          <div class="stat-cards">
+            <div class="stat-card"><div class="label">Total Revenue</div><div class="value teal">₹${(d.totalRevenue/1000).toFixed(0)}K</div><div class="change up">↑ 12.5% from last month</div></div>
+            <div class="stat-card"><div class="label">Total Orders</div><div class="value purple">${d.totalOrders}</div><div class="change up">↑ ${d.pendingOrders} pending</div></div>
+            <div class="stat-card"><div class="label">Total Users</div><div class="value coral">${d.totalUsers}</div><div class="change up">↑ 8.3% growth</div></div>
+            <div class="stat-card"><div class="label">Total Products</div><div class="value gold">${d.totalProducts}</div><div class="change">${d.lowStockProducts.length} low stock</div></div>
+          </div>
+          <div style="display:grid;grid-template-columns:2fr 1fr;gap:2rem">
+            <div class="admin-chart">
+              <h3>Revenue Overview</h3>
+              <div class="chart-bars">${d.salesData.map(s => `<div class="chart-bar" style="height:${(s.revenue/maxRev)*100}%"><div class="tooltip">₹${(s.revenue/1000).toFixed(0)}K</div></div>`).join('')}</div>
+              <div class="chart-labels">${d.salesData.map(s => `<span>${s.month}</span>`).join('')}</div>
+            </div>
+            <div>
+              <div class="admin-chart">
+                <h3>Top Products</h3>
+                ${d.topProducts.map((p,i) => `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;${i<d.topProducts.length-1?'border-bottom:1px solid var(--border-glass)':''}">
+                  <span style="font-size:0.85rem">${p.name.substring(0,20)}${p.name.length>20?'...':''}</span>
+                  <span style="color:var(--accent-teal);font-weight:600;font-size:0.8rem">${p.soldCount} sold</span>
+                </div>`).join('')}
+              </div>
+            </div>
+          </div>
+          ${d.lowStockProducts.length > 0 ? `
+          <div class="admin-chart" style="border-left:3px solid var(--accent-coral)">
+            <h3>⚠️ Low Stock Alerts</h3>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem;margin-top:1rem">
+              ${d.lowStockProducts.map(p => `<div style="background:var(--bg-glass);padding:1rem;border-radius:12px">
+                <div style="font-weight:600;font-size:0.9rem">${p.name}</div>
+                <div style="color:var(--accent-coral);font-weight:700;font-size:1.2rem;margin:4px 0">${p.stock} left</div>
+                <div style="color:var(--text-muted);font-size:0.8rem">${p.brand}</div>
+              </div>`).join('')}
+            </div>
+          </div>` : ''}
+          <div class="admin-chart">
+            <h3>Recent Orders</h3>
+            <table class="admin-table" style="margin-top:1rem">
+              <thead><tr><th>Order ID</th><th>Date</th><th>Status</th><th>Total</th></tr></thead>
+              <tbody>${d.recentOrders.map(o => `<tr>
+                <td style="font-weight:600">${o.id}</td>
+                <td>${new Date(o.createdAt).toLocaleDateString()}</td>
+                <td><span class="status-badge ${o.status}">${o.status.replace(/_/g,' ')}</span></td>
+                <td style="font-weight:600">₹${o.total.toLocaleString()}</td>
+              </tr>`).join('')}</tbody>
+            </table>
+          </div>`;
+      } catch(e) { document.getElementById('adminContent').innerHTML = '<p style="color:var(--accent-coral)">Error loading dashboard</p>'; }
+    }
+
+    let editingProductId = null;
+
+    function openAddProduct() {
+      editingProductId = null;
+      document.querySelector('#addProductModal h2').innerText = 'Add New Product';
+      document.getElementById('npSubmitBtn').innerText = 'Add Product';
+      document.getElementById('npName').value = '';
+      document.getElementById('npBrand').value = '';
+      document.getElementById('npPrice').value = '';
+      document.getElementById('npOriginalPrice').value = '';
+      document.getElementById('npCategory').value = document.getElementById('npCategory').options[0]?.value || '';
+      document.getElementById('npStock').value = '';
+      document.getElementById('npDescription').value = '';
+      // Reset image upload
+      document.getElementById('npImageFile').value = '';
+      document.getElementById('npImagePreview').style.display = 'none';
+      document.getElementById('npImagePreview').src = '';
+      document.getElementById('npImagePlaceholder').style.display = 'block';
+      window._npCurrentImageUrl = null;
+      document.getElementById('npTags').value = '';
+      document.getElementById('npFeatured').checked = false;
+      document.getElementById('addProductModal').classList.add('active');
+    }
+
+    async function openEditProduct(id) {
+      document.getElementById('adminContent').style.opacity = '0.5';
+      try {
+        const res = await fetch(`${API}/products/${id}`);
+        const data = await res.json();
+        const p = data.product;
+        if(p) {
+          editingProductId = id;
+          document.querySelector('#addProductModal h2').innerText = 'Edit Product';
+          document.getElementById('npSubmitBtn').innerText = 'Save Changes';
+          document.getElementById('npName').value = p.name || '';
+          document.getElementById('npBrand').value = p.brand || '';
+          document.getElementById('npPrice').value = p.price || '';
+          document.getElementById('npOriginalPrice').value = p.originalPrice || '';
+          document.getElementById('npCategory').value = p.category || '';
+          document.getElementById('npStock').value = p.stock || 0;
+          document.getElementById('npDescription').value = p.description || '';
+          // Load existing image as preview
+          const currentImg = p.images && p.images[0] ? p.images[0] : null;
+          window._npCurrentImageUrl = currentImg;
+          if (currentImg) {
+            document.getElementById('npImagePreview').src = currentImg;
+            document.getElementById('npImagePreview').style.display = 'block';
+            document.getElementById('npImagePlaceholder').style.display = 'none';
+          } else {
+            document.getElementById('npImagePreview').style.display = 'none';
+            document.getElementById('npImagePlaceholder').style.display = 'block';
+          }
+          document.getElementById('npImageFile').value = '';
+          document.getElementById('npTags').value = p.tags ? p.tags.join(', ') : '';
+          document.getElementById('npFeatured').checked = !!p.featured;
+          document.getElementById('addProductModal').classList.add('active');
+        } else {
+          showToast('Product not found', 'error');
+        }
+      } catch(e) {
+        showToast('Error loading product details', 'error');
+      } finally {
+        document.getElementById('adminContent').style.opacity = '1';
+      }
+    }
+
+    let _allAdminProducts = [];
+
+    async function loadAdminProducts() {
+      const ts = new Date().getTime();
+      const res = await fetch(`${API}/products?limit=250&_t=${ts}`, { headers: authHeaders() });
+      const data = await res.json();
+      const catRes = await fetch(`${API}/categories`);
+      const catData = await catRes.json();
+      _allAdminProducts = data.products;
+      // Populate category dropdown in add modal
+      document.getElementById('npCategory').innerHTML = catData.categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+      document.getElementById('adminContent').innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem">
+          <h1>📦 Product Management</h1>
+          <button class="btn-primary" style="flex:0 0 auto" onclick="openAddProduct()">+ Add Product</button>
+        </div>
+        <div style="margin-bottom:1.5rem;position:relative">
+          <span style="position:absolute;left:16px;top:50%;transform:translateY(-50%);color:var(--text-secondary);font-size:1.1rem">🔍</span>
+          <input
+            id="productSearchInput"
+            type="text"
+            placeholder="Search by product name, brand or category..."
+            oninput="filterAdminProducts(this.value)"
+            style="width:100%;padding:12px 16px 12px 46px;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:12px;color:var(--text-primary);font-size:0.95rem;outline:none;transition:border-color 0.2s;"
+            onfocus="this.style.borderColor='var(--accent-purple)'"
+            onblur="this.style.borderColor='var(--border-glass)'"
+          >
+        </div>
+        <table class="admin-table" id="adminProductsTable">
+          <thead><tr><th>Product</th><th>Brand</th><th>Price</th><th>Stock</th><th>Rating</th><th>Actions</th></tr></thead>
+          <tbody id="adminProductsTbody">${renderProductRows(data.products)}</tbody>
+        </table>
+        <div id="noProductsMsg" style="display:none;text-align:center;padding:3rem;color:var(--text-secondary)">🔍 No products match your search.</div>`;
+    }
+
+    function renderProductRows(products) {
+      if (!products || products.length === 0) return '';
+      return products.map(p => `<tr>
+        <td><div style="display:flex;align-items:center;gap:10px"><img src="${p.images[0]}" style="width:40px;height:40px;border-radius:8px;object-fit:cover">${p.name.substring(0,30)}</div></td>
+        <td>${p.brand}</td><td style="font-weight:600">₹${p.price.toLocaleString()}</td>
+        <td><span class="status-badge ${p.stock===0?'out_of_stock':p.stock<10?'low_stock':'in_stock'}">${p.stock}</span></td>
+        <td>${'★'.repeat(Math.floor(p.rating))} ${p.rating}</td>
+        <td>
+          <div style="display:flex;gap:4px;">
+            <button class="action-btn" onclick="openEditProduct('${p.id}')">Edit</button>
+            <button class="action-btn danger" onclick="deleteProduct('${p.id}', this)">Delete</button>
+          </div>
+        </td>
+      </tr>`).join('');
+    }
+
+    function filterAdminProducts(query) {
+      const q = query.toLowerCase().trim();
+      const filtered = q
+        ? _allAdminProducts.filter(p =>
+            p.name.toLowerCase().includes(q) ||
+            (p.brand && p.brand.toLowerCase().includes(q)) ||
+            (p.category && p.category.toLowerCase().includes(q))
+          )
+        : _allAdminProducts;
+      const tbody = document.getElementById('adminProductsTbody');
+      const noMsg = document.getElementById('noProductsMsg');
+      if (tbody) tbody.innerHTML = renderProductRows(filtered);
+      if (noMsg) noMsg.style.display = filtered.length === 0 ? 'block' : 'none';
+    }
+
+    function handleImageSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        document.getElementById('npImagePreview').src = e.target.result;
+        document.getElementById('npImagePreview').style.display = 'block';
+        document.getElementById('npImagePlaceholder').style.display = 'none';
+        window._npCurrentImageUrl = null; // will be set after upload
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function addProduct() {
+      // Upload image file first if a new file was selected
+      let imageUrl = window._npCurrentImageUrl || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600';
+      const fileInput = document.getElementById('npImageFile');
+      if (fileInput.files && fileInput.files[0]) {
+        const formData = new FormData();
+        formData.append('image', fileInput.files[0]);
+        try {
+          const uploadRes = await fetch(`${API.replace('/api','')}/api/upload`, { method: 'POST', body: formData });
+          const uploadData = await uploadRes.json();
+          if (uploadData.url) imageUrl = uploadData.url;
+          else { showToast('Image upload failed', 'error'); return; }
+        } catch(e) {
+          showToast('Image upload failed', 'error'); return;
+        }
+      }
+
+      const product = {
+        name: document.getElementById('npName').value,
+        brand: document.getElementById('npBrand').value,
+        price: Number(document.getElementById('npPrice').value),
+        originalPrice: Number(document.getElementById('npOriginalPrice').value),
+        category: document.getElementById('npCategory').value,
+        stock: Number(document.getElementById('npStock').value),
+        description: document.getElementById('npDescription').value,
+        images: [imageUrl],
+        tags: document.getElementById('npTags').value.split(',').map(t => t.trim()),
+        featured: document.getElementById('npFeatured').checked
+      };
+
+      let res;
+      if (editingProductId) {
+        res = await fetch(`${API}/products/${editingProductId}`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify(product) });
+      } else {
+        res = await fetch(`${API}/products`, { method: 'POST', headers: authHeaders(), body: JSON.stringify(product) });
+      }
+
+      if (res.ok) { 
+        showToast(editingProductId ? 'Product updated successfully!' : 'Product added successfully!', 'success'); 
+        document.getElementById('addProductModal').classList.remove('active'); 
+        editingProductId = null;
+        loadAdminProducts(); 
+      }
+      else showToast('Error saving product', 'error');
+    }
+
+    async function deleteProduct(id, btnElement) {
+      if(btnElement) btnElement.innerHTML = '...';
+      try {
+        const res = await fetch(`${API}/products/${id}`, { method: 'DELETE', headers: authHeaders() });
+        if (res.ok) {
+          showToast('Product deleted', 'success'); 
+          if(btnElement) btnElement.closest('tr').remove();
+        } else {
+          showToast('Failed to delete', 'error');
+          if(btnElement) btnElement.innerHTML = 'Delete';
+        }
+      } catch (e) {
+        showToast('Error deleting product', 'error');
+        if(btnElement) btnElement.innerHTML = 'Delete';
+      }
+    }
+
+    async function loadAdminOrders() {
+      const res = await fetch(`${API}/admin/orders`, { headers: authHeaders() });
+      const data = await res.json();
+      document.getElementById('adminContent').innerHTML = `
+        <h1 style="margin-bottom:2rem">🛍️ Order Management</h1>
+        <div style="display:flex;gap:8px;margin-bottom:1.5rem">
+          ${['all','confirmed','processing','shipped','delivered','cancelled'].map(s => `<button class="action-btn" onclick="filterOrders('${s}')" style="text-transform:capitalize">${s}</button>`).join('')}
+        </div>
+        <table class="admin-table">
+          <thead><tr><th>Order ID</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
+          <tbody>${data.orders.map(o => `<tr>
+            <td style="font-weight:600;font-size:0.8rem">${o.id}</td>
+            <td>${o.userName || 'N/A'}</td>
+            <td>${o.items.length} items</td>
+            <td style="font-weight:600">₹${o.total.toLocaleString()}</td>
+            <td><span class="status-badge ${o.status}">${o.status.replace(/_/g,' ')}</span></td>
+            <td style="font-size:0.8rem">${new Date(o.createdAt).toLocaleDateString()}</td>
+            <td>
+              <select onchange="updateOrderStatus('${o.id}',this.value)" style="padding:4px 8px;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:6px;color:var(--text-primary);font-size:0.8rem">
+                ${['confirmed','processing','shipped','out_for_delivery','delivered','cancelled'].map(s => `<option value="${s}" ${o.status===s?'selected':''}>${s.replace(/_/g,' ')}</option>`).join('')}
+              </select>
+            </td>
+          </tr>`).join('')}</tbody>
+        </table>`;
+    }
+
+    async function filterOrders(status) {
+      const url = status === 'all' ? `${API}/admin/orders` : `${API}/admin/orders?status=${status}`;
+      const res = await fetch(url, { headers: authHeaders() });
+      const data = await res.json();
+      document.querySelector('.admin-table tbody').innerHTML = data.orders.map(o => `<tr>
+        <td style="font-weight:600;font-size:0.8rem">${o.id}</td><td>${o.userName||'N/A'}</td><td>${o.items.length} items</td>
+        <td style="font-weight:600">₹${o.total.toLocaleString()}</td><td><span class="status-badge ${o.status}">${o.status.replace(/_/g,' ')}</span></td>
+        <td style="font-size:0.8rem">${new Date(o.createdAt).toLocaleDateString()}</td>
+        <td><select onchange="updateOrderStatus('${o.id}',this.value)" style="padding:4px 8px;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:6px;color:var(--text-primary);font-size:0.8rem">
+          ${['confirmed','processing','shipped','out_for_delivery','delivered','cancelled'].map(s=>`<option value="${s}" ${o.status===s?'selected':''}>${s.replace(/_/g,' ')}</option>`).join('')}
+        </select></td></tr>`).join('');
+    }
+
+    async function updateOrderStatus(id, status) {
+      await fetch(`${API}/admin/orders/${id}/status`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ status }) });
+      showToast('Order status updated', 'success');
+    }
+
+    async function loadAdminUsers() {
+      const res = await fetch(`${API}/admin/users`, { headers: authHeaders() });
+      const data = await res.json();
+      document.getElementById('adminContent').innerHTML = `
+        <h1 style="margin-bottom:2rem">👥 User Management</h1>
+        <table class="admin-table">
+          <thead><tr><th>User</th><th>Email</th><th>Role</th><th>Joined</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody>${data.users.map(u => `<tr>
+            <td><div style="display:flex;align-items:center;gap:10px"><div style="width:36px;height:36px;border-radius:50%;background:var(--gradient-primary);display:flex;align-items:center;justify-content:center;font-weight:700">${u.name.charAt(0)}</div>${u.name}</div></td>
+            <td>${u.email}</td>
+            <td><span class="status-badge ${u.role==='admin'?'confirmed':'shipped'}">${u.role}</span></td>
+            <td style="font-size:0.8rem">${new Date(u.createdAt).toLocaleDateString()}</td>
+            <td><span class="status-badge ${u.blocked?'cancelled':'delivered'}">${u.blocked?'Blocked':'Active'}</span></td>
+            <td>${u.role!=='admin'?`<button class="action-btn ${u.blocked?'':'danger'}" onclick="toggleBlockUser('${u.id}')">${u.blocked?'Unblock':'Block'}</button>`:''}</td>
+          </tr>`).join('')}</tbody>
+        </table>`;
+    }
+
+    async function toggleBlockUser(id) {
+      await fetch(`${API}/admin/users/${id}/block`, { method: 'PUT', headers: authHeaders() });
+      showToast('User status updated', 'success'); loadAdminUsers();
+    }
+
+    async function loadInventory() {
+      const res = await fetch(`${API}/admin/inventory`, { headers: authHeaders() });
+      const data = await res.json();
+      document.getElementById('adminContent').innerHTML = `
+        <h1 style="margin-bottom:2rem">📋 Inventory Management</h1>
+        <div class="stat-cards" style="margin-bottom:2rem">
+          <div class="stat-card"><div class="label">In Stock</div><div class="value teal">${data.inventory.filter(i=>i.status==='in_stock').length}</div></div>
+          <div class="stat-card"><div class="label">Low Stock</div><div class="value gold">${data.inventory.filter(i=>i.status==='low_stock').length}</div></div>
+          <div class="stat-card"><div class="label">Out of Stock</div><div class="value coral">${data.inventory.filter(i=>i.status==='out_of_stock').length}</div></div>
+        </div>
+        <table class="admin-table">
+          <thead><tr><th>Product</th><th>Brand</th><th>Category</th><th>Price</th><th>Stock</th><th>Sold</th><th>Status</th></tr></thead>
+          <tbody>${data.inventory.map(i => `<tr>
+            <td style="font-weight:500">${i.name.substring(0,30)}</td><td>${i.brand}</td><td>${i.category}</td>
+            <td>₹${i.price.toLocaleString()}</td><td style="font-weight:600">${i.stock}</td><td>${i.soldCount}</td>
+            <td><span class="status-badge ${i.status}">${i.status.replace(/_/g,' ')}</span></td>
+          </tr>`).join('')}</tbody>
+        </table>`;
+    }
+
+    async function loadFraudDetection() {
+      const res = await fetch(`${API}/admin/fraud-detection`, { headers: authHeaders() });
+      const data = await res.json();
+      document.getElementById('adminContent').innerHTML = `
+        <h1 style="margin-bottom:2rem">🛡️ Fraud Detection System</h1>
+        <div class="stat-cards">
+          <div class="stat-card"><div class="label">Suspicious Activities</div><div class="value coral">${data.activities.length}</div></div>
+          <div class="stat-card"><div class="label">High Risk</div><div class="value coral">${data.activities.filter(a=>a.risk==='high').length}</div></div>
+          <div class="stat-card"><div class="label">Medium Risk</div><div class="value gold">${data.activities.filter(a=>a.risk==='medium').length}</div></div>
+          <div class="stat-card"><div class="label">Low Risk</div><div class="value teal">${data.activities.filter(a=>a.risk==='low').length}</div></div>
+        </div>
+        <table class="admin-table" style="margin-top:2rem">
+          <thead><tr><th>Type</th><th>User ID</th><th>Description</th><th>Risk Level</th><th>Time</th><th>Action</th></tr></thead>
+          <tbody>${data.activities.map(a => `<tr>
+            <td style="font-weight:500">${a.type.replace(/_/g,' ')}</td><td style="font-size:0.8rem">${a.userId}</td>
+            <td>${a.description}</td>
+            <td><span class="status-badge ${a.risk==='high'?'cancelled':a.risk==='medium'?'processing':'delivered'}">${a.risk}</span></td>
+            <td style="font-size:0.8rem">${new Date(a.timestamp).toLocaleString()}</td>
+            <td><button class="action-btn danger">Block User</button></td>
+          </tr>`).join('')}</tbody>
+        </table>`;
+    }
+
+    function loadCoupons() {
+      document.getElementById('adminContent').innerHTML = `
+        <h1 style="margin-bottom:2rem">🎟️ Coupon Management</h1>
+        <table class="admin-table">
+          <thead><tr><th>Code</th><th>Discount</th><th>Type</th><th>Min Order</th><th>Max Discount</th><th>Usage</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td style="font-weight:700">WELCOME10</td><td>10%</td><td>Percent</td><td>₹500</td><td>₹200</td><td>0/100</td><td><span class="status-badge delivered">Active</span></td></tr>
+            <tr><td style="font-weight:700">FLAT50</td><td>₹50</td><td>Flat</td><td>₹1,000</td><td>₹50</td><td>0/50</td><td><span class="status-badge delivered">Active</span></td></tr>
+            <tr><td style="font-weight:700">SAVE20</td><td>20%</td><td>Percent</td><td>₹2,000</td><td>₹500</td><td>0/200</td><td><span class="status-badge delivered">Active</span></td></tr>
+            <tr><td style="font-weight:700">MEGA100</td><td>₹100</td><td>Flat</td><td>₹3,000</td><td>₹100</td><td>0/30</td><td><span class="status-badge delivered">Active</span></td></tr>
+          </tbody>
+        </table>`;
+    }
+
+    function adminLogout() {
+      localStorage.removeItem('shopwave_token');
+      window.location.href = '/login.html';
+    }
+
+    async function loadAdminReturns() {
+      const res = await fetch(`${API}/admin/returns`, { headers: authHeaders() });
+      const data = await res.json();
+      const returns = data.returns || [];
+      const counts = { pending: 0, approved: 0, rejected: 0, completed: 0 };
+      returns.forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++; });
+
+      document.getElementById('adminContent').innerHTML = `
+        <h1 style="margin-bottom:1.5rem">🔄 Return & Refund Management</h1>
+        <div class="stat-cards" style="margin-bottom:2rem">
+          <div class="stat-card"><div class="label">Pending</div><div class="value purple">${counts.pending}</div></div>
+          <div class="stat-card"><div class="label">Approved</div><div class="value teal">${counts.approved}</div></div>
+          <div class="stat-card"><div class="label">Completed</div><div class="value gold">${counts.completed}</div></div>
+          <div class="stat-card"><div class="label">Rejected</div><div class="value coral">${counts.rejected}</div></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:1.5rem">
+          ${['all','pending','approved','rejected','completed'].map(s =>
+            `<button class="action-btn" onclick="filterAdminReturns('${s}')" style="text-transform:capitalize">${s}</button>`).join('')}
+        </div>
+        <table class="admin-table" id="returnsTable">
+          <thead><tr>
+            <th>Return ID</th><th>Order ID</th><th>Customer</th><th>Type</th>
+            <th>Reason</th><th>Amount</th><th>Status</th><th>Date</th><th>Actions</th>
+          </tr></thead>
+          <tbody id="returnsTbody">${renderReturnRows(returns)}</tbody>
+        </table>`;
+    }
+
+    function renderReturnRows(returns) {
+      if (!returns.length) return `<tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--text-muted)">No return requests found</td></tr>`;
+      return returns.map(r => `<tr id="ret-row-${r.id}">
+        <td style="font-weight:600;font-size:0.8rem">${r.id}</td>
+        <td style="font-size:0.8rem">${r.orderId}</td>
+        <td>${r.userName || 'N/A'}</td>
+        <td style="text-transform:capitalize">${r.type}</td>
+        <td style="max-width:160px;font-size:0.82rem">${r.reason}</td>
+        <td style="font-weight:600">₹${r.refundAmount.toLocaleString()}</td>
+        <td><span class="return-badge return-${r.status}">${r.status}</span></td>
+        <td style="font-size:0.8rem">${new Date(r.createdAt).toLocaleDateString()}</td>
+        <td>
+          ${r.status === 'pending' ? `
+            <div style="display:flex;flex-direction:column;gap:4px;min-width:160px">
+              <input id="note-${r.id}" type="text" placeholder="Admin note (optional)" style="padding:4px 8px;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:6px;color:var(--text-primary);font-size:0.78rem;outline:none;width:100%">
+              <div style="display:flex;gap:4px">
+                <button class="action-btn" style="flex:1;background:rgba(0,212,170,0.1);border-color:var(--accent-teal);color:var(--accent-teal);font-size:0.75rem" onclick="updateReturnStatus('${r.id}','approved')">✅ Approve</button>
+                <button class="action-btn danger" style="flex:1;font-size:0.75rem" onclick="updateReturnStatus('${r.id}','rejected')">❌ Reject</button>
+              </div>
+            </div>` : r.status === 'approved' ? `
+            <button class="action-btn" style="background:rgba(34,197,94,0.1);border-color:#22c55e;color:#22c55e;font-size:0.78rem" onclick="updateReturnStatus('${r.id}','completed')">🎉 Mark Completed</button>
+          ` : '<span style="color:var(--text-muted);font-size:0.8rem">—</span>'}
+        </td>
+      </tr>`).join('');
+    }
+
+    async function filterAdminReturns(status) {
+      const url = status === 'all' ? `${API}/admin/returns` : `${API}/admin/returns?status=${status}`;
+      const res = await fetch(url, { headers: authHeaders() });
+      const data = await res.json();
+      const tbody = document.getElementById('returnsTbody');
+      if (tbody) tbody.innerHTML = renderReturnRows(data.returns || []);
+    }
+
+    async function updateReturnStatus(id, status) {
+      const adminNote = document.getElementById(`note-${id}`)?.value || '';
+      const res = await fetch(`${API}/admin/returns/${id}/status`, {
+        method: 'PUT', headers: authHeaders(),
+        body: JSON.stringify({ status, adminNote })
+      });
+      if (res.ok) { showToast(`Return ${status}!`, 'success'); loadAdminReturns(); }
+      else { const d = await res.json(); showToast(d.error || 'Failed', 'error'); }
+    }
+
+    // ── THEME TOGGLE ────────────────────────────────────────
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('shopwave_theme', theme);
+      const thumb = document.getElementById('themeThumb');
+      if (thumb) thumb.textContent = theme === 'light' ? '☀️' : '🌙';
+    }
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme') || 'dark';
+      applyTheme(current === 'dark' ? 'light' : 'dark');
+    }
+
+    // Apply saved theme on load
+    (function() {
+      const saved = localStorage.getItem('shopwave_theme') || 'dark';
+      applyTheme(saved);
+    })();
+  </script>
+</body>
+</html>

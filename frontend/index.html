@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="ShopWave - AI-Powered E-Commerce Platform. Shop the latest in Electronics, Fashion, Home & more with smart recommendations.">
+  <title>ShopWave - AI-Powered Shopping</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌊</text></svg>">
+  <script>
+    // Apply saved theme BEFORE CSS renders — prevents white flash
+    (function() {
+      const t = localStorage.getItem('shopwave_theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
+</head>
+
+<body>
+  <!-- NAVBAR -->
+  <nav class="navbar" id="navbar">
+    <a class="nav-brand" href="#" onclick="navigateTo('home')"><span class="wave">🌊</span><span>ShopWave</span></a>
+    <div class="nav-search">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="searchInput" placeholder="Search products, brands, categories...">
+      <button class="voice-btn" onclick="startVoiceSearch()" title="Voice Search">🎤</button>
+      <button class="image-btn" onclick="startImageSearch()" title="Image Search">📷</button>
+      <div class="search-suggestions" id="searchSuggestions"></div>
+    </div>
+    <div class="nav-actions" id="authArea">
+      <!-- Theme toggle injected here by JS -->
+    </div>
+  </nav>
+
+
+  <!-- NOTIFICATIONS PANEL -->
+  <div class="notifications-panel" id="notificationsPanel">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+      <h3>🔔 Notifications</h3>
+      <button class="action-btn" onclick="fetch('/api/notifications/read-all',{method:'PUT',headers:authHeaders()}).then(()=>loadNotifications())">Mark all read</button>
+    </div>
+    <div class="notif-list"></div>
+  </div>
+
+  <!-- PRODUCT DETAIL MODAL -->
+  <div class="modal-overlay" id="productModal" onclick="if(event.target===this)closeModal()">
+    <div class="modal"><button class="modal-close" onclick="closeModal()">✕</button><div class="modal-body"></div></div>
+  </div>
+
+  <!-- ORDER SUCCESS OVERLAY -->
+  <div class="success-overlay" id="successOverlay">
+    <div class="success-card">
+      <div class="checkmark">🎉</div>
+      <h2>Order Placed Successfully!</h2>
+      <p>Your order <strong class="order-id-display"></strong> has been confirmed.</p>
+      <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1rem">You'll receive updates via notifications.</p>
+      <button class="btn-primary" onclick="closeSuccess()">View Orders</button>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- ==================== PAGE: HOME ==================== -->
+  <main class="main-content">
+    <div class="page-view active" id="page-home">
+      <!-- HERO -->
+      <section class="hero">
+        <h1>Discover <span>Amazing Products</span></h1>
+        <p>AI-powered shopping experience with 30,000+ products. Find exactly what you need with voice search, image search, and smart recommendations.</p>
+        <div style="display:flex;gap:12px;justify-content:center;position:relative">
+          <button class="btn-primary" onclick="navigateTo('shop')" style="padding:14px 32px">🛍️ Shop Now</button>
+          <button class="btn-secondary" onclick="navigateTo('shop');filters.featured='true';loadProducts()" style="padding:14px 32px">⭐ Featured</button>
+        </div>
+        <!-- Floating product cards animation -->
+        <div style="display:flex;justify-content:center;gap:1.5rem;margin-top:3rem;flex-wrap:wrap;position:relative">
+          <div style="background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:16px;padding:1rem;width:160px;animation:float 4s ease-in-out infinite;cursor:pointer;transition:transform 0.2s,box-shadow 0.2s" onclick="filterByCategoryName('Electronics')" onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform='scale(1)'">
+            <div style="font-size:2rem;margin-bottom:0.5rem">💻</div>
+            <div style="font-size:0.85rem;font-weight:600">Electronics</div>
+            <div style="color:var(--accent-teal);font-size:0.75rem">2000+ items</div>
+          </div>
+          <div style="background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:16px;padding:1rem;width:160px;animation:float 4s ease-in-out infinite 0.5s;cursor:pointer;transition:transform 0.2s,box-shadow 0.2s" onclick="filterByCategoryName('Fashion')" onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform='scale(1)'">
+            <div style="font-size:2rem;margin-bottom:0.5rem">👗</div>
+            <div style="font-size:0.85rem;font-weight:600">Fashion</div>
+            <div style="color:var(--accent-teal);font-size:0.75rem">5000+ items</div>
+          </div>
+          <div style="background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:16px;padding:1rem;width:160px;animation:float 4s ease-in-out infinite 1s;cursor:pointer;transition:transform 0.2s,box-shadow 0.2s" onclick="filterByCategoryName('Home')" onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform='scale(1)'">
+            <div style="font-size:2rem;margin-bottom:0.5rem">🏠</div>
+            <div style="font-size:0.85rem;font-weight:600">Home</div>
+            <div style="color:var(--accent-teal);font-size:0.75rem">3000+ items</div>
+          </div>
+          <div style="background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:16px;padding:1rem;width:160px;animation:float 4s ease-in-out infinite 1.5s;cursor:pointer;transition:transform 0.2s,box-shadow 0.2s" onclick="filterByCategoryName('Sports')" onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform='scale(1)'">
+            <div style="font-size:2rem;margin-bottom:0.5rem">⚽</div>
+            <div style="font-size:0.85rem;font-weight:600">Sports</div>
+            <div style="color:var(--accent-teal);font-size:0.75rem">1500+ items</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CATEGORIES -->
+      <section class="categories-section">
+        <div class="section-header">
+          <h2 class="section-title">Shop by <span>Category</span></h2>
+          <a class="see-all" onclick="navigateTo('shop')">See All →</a>
+        </div>
+        <div class="categories-grid" id="categoriesGrid"></div>
+      </section>
+
+      <!-- FEATURED PRODUCTS -->
+      <section class="products-section">
+        <div class="section-header">
+          <h2 class="section-title">🔥 Trending <span>Products</span></h2>
+          <span id="productsTotal" style="color:var(--text-muted);font-size:0.9rem"></span>
+        </div>
+        <div class="products-grid" id="productsGrid"></div>
+      </section>
+
+      <!-- AI RECOMMENDATIONS -->
+      <section class="products-section" id="recommendationsSection" style="display:none">
+        <div class="section-header">
+          <h2 class="section-title">🤖 Recommended <span>For You</span></h2>
+        </div>
+        <div class="products-grid" id="recommendationsGrid"></div>
+      </section>
+
+      <!-- FEATURES BANNER -->
+      <section style="padding:3rem 2rem">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1.5rem">
+          <div style="text-align:center;padding:2rem;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:20px">
+            <div style="font-size:2.5rem;margin-bottom:0.8rem">🚚</div>
+            <h3 style="font-size:1rem;margin-bottom:0.3rem">Free Shipping</h3>
+            <p style="color:var(--text-muted);font-size:0.8rem">On orders above ₹999</p>
+          </div>
+          <div style="text-align:center;padding:2rem;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:20px">
+            <div style="font-size:2.5rem;margin-bottom:0.8rem">🔒</div>
+            <h3 style="font-size:1rem;margin-bottom:0.3rem">Secure Payment</h3>
+            <p style="color:var(--text-muted);font-size:0.8rem">100% secure checkout</p>
+          </div>
+          <div style="text-align:center;padding:2rem;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:20px">
+            <div style="font-size:2.5rem;margin-bottom:0.8rem">↩️</div>
+            <h3 style="font-size:1rem;margin-bottom:0.3rem">Easy Returns</h3>
+            <p style="color:var(--text-muted);font-size:0.8rem">7-day return policy</p>
+          </div>
+          <div style="text-align:center;padding:2rem;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:20px">
+            <div style="font-size:2.5rem;margin-bottom:0.8rem">🎧</div>
+            <h3 style="font-size:1rem;margin-bottom:0.3rem">24/7 Support</h3>
+            <p style="color:var(--text-muted);font-size:0.8rem">Always here to help</p>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ==================== PAGE: SHOP ==================== -->
+    <div class="page-view" id="page-shop">
+      <div class="page-header">
+        <h1>🛍️ <span>All Products</span></h1>
+        <div class="breadcrumb"><a href="#" onclick="navigateTo('home')">Home</a> / Shop</div>
+      </div>
+      <div class="shop-layout">
+        <aside class="filters-sidebar">
+          <h3 style="margin-bottom:1rem;font-size:1.1rem">🔧 Filters</h3>
+          <div class="filter-group">
+            <h3>Category</h3>
+            <div id="filterCategories"></div>
+          </div>
+          <div class="filter-group">
+            <h3>Price Range</h3>
+            <div class="price-range">
+              <input type="number" id="filterMinPrice" placeholder="Min" onchange="applyFilters()">
+              <span>-</span>
+              <input type="number" id="filterMaxPrice" placeholder="Max" onchange="applyFilters()">
+            </div>
+          </div>
+          <div class="filter-group">
+            <h3>Rating</h3>
+            <select id="filterRating" onchange="applyFilters()" style="width:100%;padding:8px;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:8px;color:var(--text-primary)">
+              <option value="">All Ratings</option>
+              <option value="4">4★ & above</option>
+              <option value="3">3★ & above</option>
+              <option value="2">2★ & above</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <h3>Sort By</h3>
+            <select id="filterSort" onchange="applyFilters()" style="width:100%;padding:8px;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:8px;color:var(--text-primary)">
+              <option value="">Default</option>
+              <option value="price_asc">Price: Low to High</option>
+              <option value="price_desc">Price: High to Low</option>
+              <option value="rating">Top Rated</option>
+              <option value="newest">Newest</option>
+              <option value="popular">Most Popular</option>
+            </select>
+          </div>
+          <button class="filter-btn" onclick="clearFilters()">Clear All Filters</button>
+        </aside>
+        <div style="flex:1">
+          <div class="products-grid" id="shopProductsGrid"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== PAGE: CART ==================== -->
+    <div class="page-view" id="page-cart">
+      <div class="page-header">
+        <h1>🛒 Shopping <span>Cart</span></h1>
+        <div class="breadcrumb"><a href="#" onclick="navigateTo('home')">Home</a> / Cart</div>
+      </div>
+      <div id="cartContent"></div>
+    </div>
+
+    <!-- ==================== PAGE: WISHLIST ==================== -->
+    <div class="page-view" id="page-wishlist">
+      <div class="page-header">
+        <h1>❤️ My <span>Wishlist</span></h1>
+        <div class="breadcrumb"><a href="#" onclick="navigateTo('home')">Home</a> / Wishlist</div>
+      </div>
+      <div id="wishlistContent"></div>
+    </div>
+
+    <!-- ==================== PAGE: ORDERS ==================== -->
+    <div class="page-view" id="page-orders">
+      <div class="page-header">
+        <h1>📦 My <span>Orders</span></h1>
+        <div class="breadcrumb"><a href="#" onclick="navigateTo('home')">Home</a> / Orders</div>
+      </div>
+      <div id="ordersContent"></div>
+    </div>
+
+    <!-- ==================== PAGE: CHECKOUT ==================== -->
+    <div class="page-view" id="page-checkout">
+      <div class="page-header">
+        <h1>💳 Secure <span>Checkout</span></h1>
+        <div class="breadcrumb"><a href="#" onclick="navigateTo('home')">Home</a> / <a href="#" onclick="navigateTo('cart')">Cart</a> / Checkout</div>
+      </div>
+      <div id="checkoutContent"></div>
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer style="background:var(--bg-secondary);border-top:1px solid var(--border-glass);padding:3rem 2rem;margin-top:2rem">
+    <div style="max-width:1200px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:2rem">
+      <div>
+        <div style="font-size:1.3rem;font-weight:800;margin-bottom:1rem"><span style="background:var(--gradient-primary);-webkit-background-clip:text;-webkit-text-fill-color:transparent">🌊 ShopWave</span></div>
+        <p style="color:var(--text-muted);font-size:0.85rem;line-height:1.7">AI-powered e-commerce platform delivering the best shopping experience with smart recommendations.</p>
+      </div>
+      <div>
+        <h4 style="margin-bottom:1rem;font-size:0.9rem">Quick Links</h4>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <a href="#" onclick="navigateTo('shop')" style="color:var(--text-muted);font-size:0.85rem;transition:var(--transition)">All Products</a>
+          <a href="#" onclick="navigateTo('orders')" style="color:var(--text-muted);font-size:0.85rem">My Orders</a>
+          <a href="#" onclick="navigateTo('wishlist')" style="color:var(--text-muted);font-size:0.85rem">Wishlist</a>
+          <a href="#" onclick="navigateTo('cart')" style="color:var(--text-muted);font-size:0.85rem">Cart</a>
+        </div>
+      </div>
+      <div>
+        <h4 style="margin-bottom:1rem;font-size:0.9rem">Support</h4>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <span style="color:var(--text-muted);font-size:0.85rem">📧 support@shopwave.com</span>
+          <span style="color:var(--text-muted);font-size:0.85rem">📞 1800-SHOP-WAVE</span>
+          <span style="color:var(--text-muted);font-size:0.85rem">💬 Live Chat 24/7</span>
+        </div>
+      </div>
+      <div>
+        <h4 style="margin-bottom:1rem;font-size:0.9rem">Payment Methods</h4>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <span style="background:var(--bg-glass);padding:6px 12px;border-radius:8px;font-size:0.8rem">💳 Visa</span>
+          <span style="background:var(--bg-glass);padding:6px 12px;border-radius:8px;font-size:0.8rem">💳 MC</span>
+          <span style="background:var(--bg-glass);padding:6px 12px;border-radius:8px;font-size:0.8rem">📱 UPI</span>
+          <span style="background:var(--bg-glass);padding:6px 12px;border-radius:8px;font-size:0.8rem">💵 COD</span>
+        </div>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:2rem;padding-top:2rem;border-top:1px solid var(--border-glass);color:var(--text-muted);font-size:0.8rem">
+      © 2024 ShopWave. All rights reserved. Built with ❤️ and AI
+    </div>
+  </footer>
+
+  <!-- CHATBOT -->
+  <button class="chatbot-toggle" onclick="toggleChatbot()" id="chatbotToggle">💬</button>
+  <div class="chatbot-panel" id="chatbotPanel">
+    <div class="chatbot-header">
+      <h3>🤖 ShopWave Assistant</h3>
+      <button class="close-chat" onclick="toggleChatbot()">✕</button>
+    </div>
+    <div class="chatbot-messages" id="chatMessages">
+      <div class="chat-msg bot">Hi! 👋 I'm your ShopWave assistant. How can I help you today?
+
+I can help with:
+🔍 Product recommendations
+📦 Order tracking
+💳 Payment info
+🎟️ Coupon codes</div>
+    </div>
+    <div class="chatbot-input">
+      <input type="text" id="chatInput" placeholder="Type a message...">
+      <button onclick="sendChatMessage()">➤</button>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>

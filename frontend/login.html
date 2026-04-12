@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShopWave - Login</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌊</text></svg>">
+  <script>
+    // Apply saved theme BEFORE page renders (prevents flash)
+    (function() {
+      const t = localStorage.getItem('shopwave_theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
+</head>
+<body>
+  <!-- Theme Toggle (top-right) -->
+  <button
+    id="loginThemeToggle"
+    onclick="toggleLoginTheme()"
+    title="Toggle light/dark mode"
+    style="position:fixed;top:16px;right:16px;z-index:100;display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:50px;border:1px solid var(--border-glass);background:var(--bg-card);color:var(--text-primary);cursor:pointer;font-size:0.8rem;font-weight:600;font-family:'Inter',sans-serif;box-shadow:var(--shadow-lg);transition:all 0.3s ease">
+    <span id="loginThemeIcon">🌙</span>
+    <span id="loginThemeLabel">Dark Mode</span>
+  </button>
+
+  <div class="login-page">
+    <!-- Floating particles -->
+    <div style="position:absolute;width:100%;height:100%;overflow:hidden;z-index:0" id="particles"></div>
+    
+    <div class="login-card">
+      <div style="text-align:center;margin-bottom:1rem">
+        <span style="font-size:2.5rem">🌊</span>
+      </div>
+      <h2 style="text-align:center">Welcome to <span>ShopWave</span></h2>
+      <p class="subtitle" style="text-align:center">Your AI-powered shopping destination</p>
+
+      <div class="login-tabs">
+        <button class="login-tab active" onclick="switchTab('login')">Login</button>
+        <button class="login-tab" onclick="switchTab('signup')">Sign Up</button>
+      </div>
+
+      <!-- LOGIN FORM -->
+      <form id="loginForm" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="loginEmail" placeholder="Enter your email" required>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="loginPassword" placeholder="Enter your password" required>
+        </div>
+        <button type="submit" class="btn-primary" style="width:100%;margin-top:1rem" id="loginBtn">🚀 Login</button>
+        <div style="margin-top:1rem;text-align:center">
+          <p style="color:var(--text-muted);font-size:0.8rem">Demo Accounts:</p>
+          <p style="color:var(--text-secondary);font-size:0.75rem;cursor:pointer" onclick="fillDemo('admin')">Admin: admin@shopwave.com / admin123</p>
+          <p style="color:var(--text-secondary);font-size:0.75rem;cursor:pointer" onclick="fillDemo('user')">User: john@example.com / user123</p>
+        </div>
+      </form>
+
+      <!-- SIGNUP FORM -->
+      <form id="signupForm" style="display:none" onsubmit="handleSignup(event)">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="signupName" placeholder="Enter your name" required>
+        </div>
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="signupEmail" placeholder="Enter your email" required>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="signupPassword" placeholder="Create a password" required minlength="6">
+        </div>
+        <button type="submit" class="btn-primary" style="width:100%;margin-top:1rem" id="signupBtn">✨ Create Account</button>
+      </form>
+
+      <div id="authError" style="display:none;margin-top:1rem;padding:10px;background:rgba(255,107,107,0.1);border:1px solid rgba(255,107,107,0.3);border-radius:8px;color:var(--accent-coral);font-size:0.85rem;text-align:center"></div>
+    </div>
+  </div>
+
+  <script>
+    const API = 'http://localhost:3000/api';
+
+    // Sync toggle button label with current theme
+    (function() {
+      const t = document.documentElement.getAttribute('data-theme') || 'dark';
+      const icon = document.getElementById('loginThemeIcon');
+      const label = document.getElementById('loginThemeLabel');
+      if (icon) icon.textContent = t === 'light' ? '☀️' : '🌙';
+      if (label) label.textContent = t === 'light' ? 'Light Mode' : 'Dark Mode';
+    })();
+
+    function toggleLoginTheme() {
+      const current = document.documentElement.getAttribute('data-theme') || 'dark';
+      const next = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('shopwave_theme', next);
+      document.getElementById('loginThemeIcon').textContent = next === 'light' ? '☀️' : '🌙';
+      document.getElementById('loginThemeLabel').textContent = next === 'light' ? 'Light Mode' : 'Dark Mode';
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll('.login-tab').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById('loginForm').style.display = tab === 'login' ? 'block' : 'none';
+      document.getElementById('signupForm').style.display = tab === 'signup' ? 'block' : 'none';
+      document.getElementById('authError').style.display = 'none';
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('authError');
+      el.textContent = msg; el.style.display = 'block';
+    }
+
+    function fillDemo(type) {
+      if (type === 'admin') {
+        document.getElementById('loginEmail').value = 'admin@shopwave.com';
+        document.getElementById('loginPassword').value = 'admin123';
+      } else {
+        document.getElementById('loginEmail').value = 'john@example.com';
+        document.getElementById('loginPassword').value = 'user123';
+      }
+    }
+
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const btn = document.getElementById('loginBtn');
+      btn.disabled = true; btn.textContent = '⏳ Logging in...';
+      try {
+        const res = await fetch(`${API}/auth/login`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: document.getElementById('loginEmail').value, password: document.getElementById('loginPassword').value })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          localStorage.setItem('shopwave_token', data.token);
+          window.location.href = data.user.role === 'admin' ? '/admin.html' : '/';
+        } else showError(data.error);
+      } catch(e) { showError('Connection failed. Make sure the server is running.'); }
+      btn.disabled = false; btn.textContent = '🚀 Login';
+    }
+
+    async function handleSignup(e) {
+      e.preventDefault();
+      const btn = document.getElementById('signupBtn');
+      btn.disabled = true; btn.textContent = '⏳ Creating account...';
+      try {
+        const res = await fetch(`${API}/auth/signup`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: document.getElementById('signupName').value, email: document.getElementById('signupEmail').value, password: document.getElementById('signupPassword').value })
+        });
+        const data = await res.json();
+        if (res.ok) { localStorage.setItem('shopwave_token', data.token); window.location.href = '/'; }
+        else showError(data.error);
+      } catch(e) { showError('Connection failed'); }
+      btn.disabled = false; btn.textContent = '✨ Create Account';
+    }
+
+    // Animated particles background
+    function createParticles() {
+      const container = document.getElementById('particles');
+      for (let i = 0; i < 30; i++) {
+        const particle = document.createElement('div');
+        const size = Math.random() * 6 + 2;
+        particle.style.cssText = `position:absolute;width:${size}px;height:${size}px;background:rgba(108,99,255,${Math.random()*0.3+0.1});border-radius:50%;left:${Math.random()*100}%;top:${Math.random()*100}%;animation:particleFloat ${Math.random()*10+10}s linear infinite`;
+        container.appendChild(particle);
+      }
+    }
+    const style = document.createElement('style');
+    style.textContent = `@keyframes particleFloat{0%{transform:translateY(0) translateX(0);opacity:0}10%{opacity:1}90%{opacity:1}100%{transform:translateY(-100vh) translateX(${Math.random()*100-50}px);opacity:0}}`;
+    document.head.appendChild(style);
+    createParticles();
+
+    // Redirect if already logged in
+    if (localStorage.getItem('shopwave_token')) {
+      fetch(`${API}/auth/me`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('shopwave_token')}` } })
+        .then(r => r.json()).then(d => { if (d.user) window.location.href = d.user.role === 'admin' ? '/admin.html' : '/'; });
+    }
+  </script>
+</body>
+</html>
