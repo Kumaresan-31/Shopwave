@@ -897,10 +897,10 @@ function renderCheckout(cartData, addresses) {
       <div class="checkout-step">
         <h3><span class="step-num">2</span>Payment Method</h3>
         <div class="payment-options">
-          <div class="payment-option selected" data-method="upi" onclick="selectPayment(this,'upi')"><div class="icon">📱</div><div class="label">UPI</div><div style="font-size:0.75rem;color:var(--text-muted)">GPay / PhonePe</div></div>
-          <div class="payment-option" data-method="card" onclick="selectPayment(this,'card')"><div class="icon">💳</div><div class="label">Card</div><div style="font-size:0.75rem;color:var(--text-muted)">Credit / Debit</div></div>
-          <div class="payment-option" data-method="netbanking" onclick="selectPayment(this,'netbanking')"><div class="icon">🏦</div><div class="label">Net Banking</div><div style="font-size:0.75rem;color:var(--text-muted)">All banks</div></div>
-          <div class="payment-option" data-method="cod" onclick="selectPayment(this,'cod')"><div class="icon">💵</div><div class="label">Cash on Delivery</div><div style="font-size:0.75rem;color:var(--text-muted)">Pay at door</div></div>
+          <div class="payment-option disabled" data-method="upi" title="UPI is not available" style="opacity:0.45;cursor:not-allowed;position:relative"><div class="icon">📱</div><div class="label">UPI</div><div style="font-size:0.75rem;color:var(--text-muted)">GPay / PhonePe</div><span style="position:absolute;top:8px;right:8px;font-size:0.62rem;font-weight:700;background:rgba(255,107,107,0.18);color:#ff6b6b;border:1px solid rgba(255,107,107,0.35);border-radius:50px;padding:2px 7px;letter-spacing:0.03em">Not Available</span></div>
+          <div class="payment-option disabled" data-method="card" title="Card payment is not available" style="opacity:0.45;cursor:not-allowed;position:relative"><div class="icon">💳</div><div class="label">Card</div><div style="font-size:0.75rem;color:var(--text-muted)">Credit / Debit</div><span style="position:absolute;top:8px;right:8px;font-size:0.62rem;font-weight:700;background:rgba(255,107,107,0.18);color:#ff6b6b;border:1px solid rgba(255,107,107,0.35);border-radius:50px;padding:2px 7px;letter-spacing:0.03em">Not Available</span></div>
+          <div class="payment-option disabled" data-method="netbanking" title="Net Banking is not available" style="opacity:0.45;cursor:not-allowed;position:relative"><div class="icon">🏦</div><div class="label">Net Banking</div><div style="font-size:0.75rem;color:var(--text-muted)">All banks</div><span style="position:absolute;top:8px;right:8px;font-size:0.62rem;font-weight:700;background:rgba(255,107,107,0.18);color:#ff6b6b;border:1px solid rgba(255,107,107,0.35);border-radius:50px;padding:2px 7px;letter-spacing:0.03em">Not Available</span></div>
+          <div class="payment-option selected" data-method="cod" onclick="selectPayment(this,'cod')"><div class="icon">💵</div><div class="label">Cash on Delivery</div><div style="font-size:0.75rem;color:var(--text-muted)">Pay at door</div></div>
         </div>
       </div>
       <div class="checkout-step">
@@ -925,9 +925,9 @@ function renderCheckout(cartData, addresses) {
   window._checkoutData = { cartData, shipping, tax, addresses };
 }
 
-let selectedAddress = null, selectedPayment = 'upi', checkoutDiscount = 0;
+let selectedAddress = null, selectedPayment = 'cod', checkoutDiscount = 0;
 function selectAddress(el, id) { selectedAddress = id; document.querySelectorAll('.address-card').forEach(c => c.classList.remove('selected')); el.classList.add('selected'); }
-function selectPayment(el, method) { selectedPayment = method; document.querySelectorAll('.payment-option').forEach(c => c.classList.remove('selected')); el.classList.add('selected'); }
+function selectPayment(el, method) { if (el.classList.contains('disabled')) return; selectedPayment = method; document.querySelectorAll('.payment-option:not(.disabled)').forEach(c => c.classList.remove('selected')); el.classList.add('selected'); }
 function showAddAddressForm() { document.getElementById('newAddressForm').style.display = 'block'; }
 async function saveAddress() {
   const data = { label: document.getElementById('addrLabel').value, street: document.getElementById('addrStreet').value, city: document.getElementById('addrCity').value, state: document.getElementById('addrState').value, zip: document.getElementById('addrZip').value, phone: document.getElementById('addrPhone').value, isDefault: false };
