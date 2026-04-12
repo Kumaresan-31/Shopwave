@@ -1,5 +1,5 @@
 // ==================== SHOPWAVE APP ====================
-const API = 'http://localhost:3000/api';
+const API = '/api';
 let currentUser = null;
 let token = localStorage.getItem('shopwave_token');
 let currentPage = 'home';
