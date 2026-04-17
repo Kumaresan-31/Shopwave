@@ -1,0 +1,521 @@
+================================================================================
+              SHOPWAVE — AI-POWERED E-COMMERCE PLATFORM
+              PROJECT DOCUMENTATION REPORT
+              Academic Year: 2025 – 2026
+================================================================================
+
+Prepared by : Kumaresan B
+GitHub       : https://github.com/Kumaresan-31
+Live Demo    : https://shopwaveshopwave.onrender.com
+Technology   : Node.js | Express.js | MySQL | HTML5 | CSS3 | Vanilla JavaScript
+
+================================================================================
+TABLE OF CONTENTS
+================================================================================
+
+  1. AIM OF THE PROJECT
+  2. OBJECTIVES OF THE PROJECT
+  3. PROBLEM STATEMENT
+  4. IMPLEMENTATION — SYSTEM ARCHITECTURE
+     4.1  Architectural Overview
+     4.2  Frontend Layer
+     4.3  Backend Layer (API Server)
+     4.4  Database Layer
+     4.5  Authentication & Security
+     4.6  AI Recommendation Engine
+     4.7  Admin Module
+     4.8  Deployment Architecture
+     4.9  Data Flow Diagram
+     4.10 API Endpoint Summary
+
+================================================================================
+1. AIM OF THE PROJECT
+================================================================================
+
+The aim of ShopWave is to design, develop, and deploy a feature-complete,
+full-stack e-commerce web platform that replicates real-world online shopping
+experiences while integrating intelligent, AI-driven personalisation features.
+
+The platform targets both end-users (customers) and business administrators by
+providing a seamless shopping experience on the frontend alongside a powerful
+management dashboard on the backend. The project demonstrates the practical
+application of modern web technologies—Node.js, Express.js, MySQL, JWT
+authentication, and Vanilla JavaScript—in building a production-ready,
+scalable, and accessible web application.
+
+ShopWave aspires to bridge the gap between academic learning and industry-level
+software engineering by implementing features such as:
+
+  • Personalised AI product recommendations
+  • Real-time order tracking with timeline states
+  • Role-based access control (RBAC) for users and admins
+  • Secure JWT authentication with bcrypt password hashing
+  • A complete return and refund management workflow
+  • Fraud detection logging for administrative oversight
+  • Cloud deployment on Render.com for global accessibility
+
+================================================================================
+2. OBJECTIVES OF THE PROJECT
+================================================================================
+
+The project is designed to achieve the following specific objectives:
+
+  2.1 FUNCTIONAL OBJECTIVES
+  --------------------------
+  a) Develop a responsive, multi-page single-page application (SPA) that
+     supports product browsing, searching, filtering, and purchasing.
+
+  b) Implement a secure user authentication system using JSON Web Tokens (JWT)
+     and bcryptjs for password encryption, ensuring data privacy.
+
+  c) Build a dynamic product catalogue with 200+ products spanning 11
+     categories (Electronics, Fashion, Home & Living, Sports, Books, Beauty,
+     Toys, Food, Automotive, Healthcare, and Stationery).
+
+  d) Implement a fully functional shopping cart and wishlist system, allowing
+     users to manage product selections across sessions.
+
+  e) Develop a multi-step checkout flow that includes address management,
+     payment method selection, coupon validation, and order summary.
+
+  f) Integrate an AI-powered product recommendation engine that analyses user
+     order history and browsing behaviour to surface relevant products.
+
+  g) Provide real-time order status tracking with a visual timeline (Confirmed
+     → Processing → Shipped → Out for Delivery → Delivered).
+
+  h) Implement a Return & Refund system that allows users to submit return
+     requests within 7 days of delivery and tracks their resolution status.
+
+  i) Build a fully featured Admin Dashboard providing:
+       - Revenue and sales analytics with charts
+       - Product, order, user, and coupon management
+       - Inventory tracking with low-stock alerts
+       - Return/refund request approvals and rejections
+       - Fraud detection and activity logging
+
+  j) Apply a persistent dark/light theme toggle with saved user preference.
+
+  2.2 TECHNICAL OBJECTIVES
+  -------------------------
+  a) Design a RESTful API architecture using Express.js with modular route
+     handlers for all system resources (auth, products, orders, cart, etc.).
+
+  b) Use MySQL as the persistent storage layer for user accounts, with
+     in-memory storage for products and orders to ensure fast response times.
+
+  c) Implement role-based access control (RBAC) to differentiate between
+     customer and administrator privileges at both API and UI levels.
+
+  d) Use JSON Web Tokens (JWT) for stateless authentication, enabling
+     scalability and reducing server-side session overhead.
+
+  e) Deploy the complete application (frontend + backend) on Render.com, a
+     cloud platform that supports Node.js web services.
+
+  f) Integrate Multer middleware for secure multipart file uploads to handle
+     product image management in the admin panel.
+
+  2.3 QUALITY OBJECTIVES
+  -----------------------
+  a) Ensure the UI is fully responsive across desktop, tablet, and mobile
+     screen sizes.
+
+  b) Maintain consistent UX patterns including loading states, error messages,
+     toast notifications, and confirmation dialogs.
+
+  c) Provide a notification system for real-time in-app alerts covering order
+     updates, return status changes, and welcome messages.
+
+================================================================================
+3. PROBLEM STATEMENT
+================================================================================
+
+  3.1 BACKGROUND
+  ---------------
+  The rapid growth of digital commerce has created a strong demand for
+  reliable, fast, and user-friendly online shopping platforms. However, many
+  small and mid-scale e-commerce solutions suffer from:
+
+    i)  Poor user experience with complex navigation and slow load times.
+   ii)  Weak or absent personalisation — customers are shown irrelevant
+        products rather than tailored recommendations.
+  iii)  Limited inventory and order management capabilities for administrators.
+   iv)  Insecure authentication practices exposing user credentials to risk.
+    v)  No transparent post-purchase support such as order tracking, returns,
+        or refund processing.
+   vi)  Difficult deployment and maintenance cycles for non-DevOps developers.
+
+  3.2 PROBLEM DEFINITION
+  -----------------------
+  Existing lightweight e-commerce templates and demo applications fail to
+  address the complete customer journey — from product discovery to post-
+  purchase support. Specifically:
+
+  PROBLEM 1 — Lack of Personalisation:
+    Most open-source or academic e-commerce projects display static product
+    listings without any form of user-specific recommendation or filtering based
+    on individual purchase or browsing history.
+
+  PROBLEM 2 — Incomplete Order Lifecycle:
+    Many systems handle order placement but lack post-placement features such
+    as real-time status tracking, cancellation workflows, and return/refund
+    pipelines, leaving customers without visibility into their purchases.
+
+  PROBLEM 3 — Weak Authentication and Access Control:
+    Plain-text password storage or the absence of role-based access control
+    (RBAC) remains a common issue in academic projects, posing security risks
+    in any production-like environment.
+
+  PROBLEM 4 — Fragmented Admin Capabilities:
+    Administrative features are either missing entirely or siloed — with no
+    unified dashboard to manage products, inventory, users, orders, returns,
+    coupons, and fraud detection in one place.
+
+  PROBLEM 5 — Static, Non-Dynamic UI:
+    Frontend interfaces often lack responsiveness, modern aesthetic design,
+    dark/light mode support, and real-time interactions such as live search,
+    dynamic filtering, and in-app notifications.
+
+  PROBLEM 6 — Deployment Complexity:
+    Many full-stack academic projects are not deployable due to tight coupling
+    to local environments, hardcoded credentials, and absence of cloud-friendly
+    configuration.
+
+  3.3 PROPOSED SOLUTION
+  ----------------------
+  ShopWave addresses all six problems above through:
+
+    - An AI recommendation module powered by purchase and view history analysis.
+    - A full order lifecycle — placement, tracking, cancellation, and returns.
+    - JWT + bcrypt-based secure authentication with admin/user RBAC.
+    - A unified admin dashboard covering all management domains.
+    - A dark/light SPA interface with live search, filters, and notifications.
+    - Render.com deployment with environment variable configuration and
+      relative API paths for environment-agnostic deployment.
+
+================================================================================
+4. IMPLEMENTATION — SYSTEM ARCHITECTURE
+================================================================================
+
+  4.1 ARCHITECTURAL OVERVIEW
+  ---------------------------
+  ShopWave follows a Client-Server architecture organised into three primary
+  layers:
+
+    ┌─────────────────────────────────────────────┐
+    │              CLIENT (Browser)               │
+    │  HTML5 + CSS3 + Vanilla JS (SPA)            │
+    │  Pages: index.html | login.html | admin.html│
+    └──────────────────┬──────────────────────────┘
+                       │  HTTP / REST API (JSON)
+    ┌──────────────────▼──────────────────────────┐
+    │          APPLICATION SERVER                 │
+    │  Node.js + Express.js (backend/server.js)   │
+    │  JWT Middleware | Multer | bcryptjs          │
+    └───────────┬──────────────────────────────────┘
+                │
+    ┌───────────▼──────────────────────────────────┐
+    │              DATA LAYER                      │
+    │  MySQL — Users, Sessions (db.js)             │
+    │  In-Memory — Products, Orders, Cart, Wishlist│
+    └──────────────────────────────────────────────┘
+
+  Deployment Platform: Render.com (Web Service — Node.js runtime)
+
+  ---
+
+  4.2 FRONTEND LAYER
+  -------------------
+  Technology  : HTML5, CSS3, Vanilla JavaScript (no framework)
+  Architecture: Single Page Application (SPA) — DOM manipulation via app.js
+
+  Files:
+    frontend/
+    ├── index.html    — Main storefront (Home, Shop, Product Detail, Cart,
+    │                   Checkout, Orders, Wishlist, Profile, Notifications)
+    ├── login.html    — Authentication page (Login + Signup tabs)
+    ├── admin.html    — Admin Dashboard (Overview, Products, Orders,
+    │                   Users, Returns, Inventory, Fraud, Coupons)
+    └── css/
+    │   └── styles.css — Global stylesheet with dark/light theme tokens,
+    │                    responsive grid, component styles, animations
+    └── js/
+        └── app.js    — Full SPA logic (~4000+ lines):
+                         • View rendering & routing (showView function)
+                         • API calls via fetch() with JWT headers
+                         • Cart, wishlist, checkout state management
+                         • AI recommendation rendering
+                         • Admin CRUD operations
+                         • Toast notifications, theme toggle, modals
+
+  Key Frontend Patterns:
+    - View-based routing: each "page" is a <section> toggled via JS
+    - LocalStorage: JWT token, theme preference, guest cart
+    - Dynamic DOM rendering: product cards, order timelines, admin tables
+    - Debounced live search with autocomplete dropdown
+    - Category and price range filters with real-time result updates
+
+  ---
+
+  4.3 BACKEND LAYER (API SERVER)
+  --------------------------------
+  Technology  : Node.js v18+ | Express.js
+  Entry Point : backend/server.js
+
+  Middleware Stack:
+    • express.json()          — JSON body parsing
+    • express.static()        — Serve frontend static files
+    • cors()                  — Cross-origin resource sharing
+    • authenticateToken()     — JWT verification middleware
+    • requireAdmin()          — RBAC admin-only route guard
+    • multer (diskStorage)    — File upload handling (/uploads)
+
+  API Route Groups:
+    /api/auth/*         — Register, Login, Profile CRUD
+    /api/products/*     — Product catalogue CRUD + search + reviews
+    /api/orders/*       — Order placement, tracking, cancel, return
+    /api/cart/*         — Cart CRUD (per user, in-memory)
+    /api/wishlist/*     — Wishlist CRUD (per user, in-memory)
+    /api/notifications/ — Get and mark notifications read
+    /api/admin/*        — Admin analytics, user mgmt, fraud logs
+
+  Data Sources:
+    • backend/products_part1.js — Static product catalog (part 1)
+    • backend/products_part2.js — Static product catalog (part 2)
+    • In-memory Maps: orders, cart, wishlist, notifications, reviews
+
+  ---
+
+  4.4 DATABASE LAYER
+  -------------------
+  Technology: MySQL (via mysql2 npm package with connection pooling)
+
+  Schema (database.sql):
+    Table: users
+      - id          INT PRIMARY KEY AUTO_INCREMENT
+      - name        VARCHAR(100)
+      - email       VARCHAR(100) UNIQUE NOT NULL
+      - password    VARCHAR(255)        [bcrypt hash]
+      - role        ENUM('user','admin') DEFAULT 'user'
+      - created_at  TIMESTAMP
+
+  Connection: backend/db.js
+    - Uses mysql2.createPool() for connection reuse and concurrency
+    - Configured via .env: DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, DB_PORT
+
+  Seeding: backend/seed-db.js
+    - Inserts default admin and test user accounts on first run
+
+  Note: Products, orders, cart, wishlist, and session data are held
+  in-memory (JavaScript Maps) for fast I/O without DB overhead.
+
+  ---
+
+  4.5 AUTHENTICATION & SECURITY
+  -------------------------------
+  Method      : JSON Web Tokens (JWT) — stateless, scalable
+  Library     : jsonwebtoken + bcryptjs
+
+  Flow:
+    1. User submits email + password to POST /api/auth/login
+    2. Server verifies email against MySQL users table
+    3. bcrypt.compare() validates the hashed password
+    4. On success: server signs a JWT with { id, email, role } payload
+       (expires in 7 days)
+    5. Token is returned to client → stored in localStorage
+    6. All subsequent protected requests include:
+         Authorization: Bearer <token>
+    7. authenticateToken() middleware decodes and validates the token
+    8. requireAdmin() checks req.user.role === 'admin' for admin routes
+
+  Password Security:
+    - Passwords hashed using bcrypt with salt rounds = 10
+    - Plain-text passwords are NEVER stored or transmitted
+
+  ---
+
+  4.6 AI RECOMMENDATION ENGINE
+  ------------------------------
+  Type        : Content-based + History-based collaborative filtering
+                (lightweight, serverside in-memory implementation)
+
+  Logic (GET /api/recommendations):
+    1. Retrieve authenticated user's full order history
+    2. Extract all product categories and brands from purchased items
+    3. Score all products:
+         +3 points  → same category as purchased item
+         +2 points  → same brand as purchased item
+         +1 point   → overlapping tags with purchased items
+         -∞         → already purchased (excluded)
+    4. Sort scored products in descending order
+    5. Return top-N recommendations (default: 8)
+
+  Additional Signal:
+    - Recently viewed products (stored in-memory per session)
+      contribute additional tag-match signals
+
+  Output:
+    - Rendered as a horizontal scrollable "Recommended For You" row
+      on the homepage after login
+
+  ---
+
+  4.7 ADMIN MODULE
+  -----------------
+  Access: admin.html (role-checked on load — non-admins redirected)
+
+  Features:
+    Dashboard Overview:
+      - Total revenue, total orders, active users counter
+      - Bar chart: orders per week (rendered via canvas)
+      - Pie chart: revenue by category
+      - Top 5 selling products table
+      - Low-stock alert list (stock < 10)
+
+    Product Management:
+      - Paginated product table with image preview
+      - Add product modal: name, price, category, brand, description,
+        stock, image upload (Multer → /uploads)
+      - Edit product: inline modal with pre-filled values
+      - Delete product: confirmation dialog
+
+    Order Management:
+      - All orders with user, status, total, date
+      - Inline status update dropdown (Confirmed → Delivered)
+
+    User Management:
+      - All registered users with email, join date, order count
+      - Block / Unblock user accounts
+
+    Return Management:
+      - Pending return requests with order ID, reason, date
+      - Approve (triggers refund status) or Reject with response
+
+    Inventory Tracker:
+      - Stock levels for all products
+      - Visual indicators for low / out-of-stock items
+
+    Fraud Detection:
+      - Activity log: user ID, action, IP (mocked), risk level
+      - Risk levels: Low, Medium, High (colour-coded)
+
+    Coupon Management:
+      - Table of all coupon codes with discount type, value, usage count
+
+  ---
+
+  4.8 DEPLOYMENT ARCHITECTURE
+  ----------------------------
+  Platform   : Render.com (Free Web Service Tier)
+  Runtime    : Node.js 18+
+  Entry Point: node backend/server.js
+
+  Static Serving:
+    Express serves frontend/ as static files — no separate CDN or nginx
+    needed. The same server handles both API requests and UI delivery.
+
+  Environment Variables (set on Render dashboard):
+    DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, DB_PORT,
+    JWT_SECRET, PORT
+
+  API Path Strategy:
+    All frontend API calls use relative paths (/api/...) so the same
+    codebase works on localhost and production without code changes.
+
+  Build Pipeline:
+    GitHub → Render.com auto-deploy on push to main branch
+    Build Command : npm install
+    Start Command : node backend/server.js
+
+  File Uploads:
+    Uploaded images stored in /uploads directory on the Render instance.
+    (Note: Render free tier has ephemeral storage — images reset on redeploy)
+
+  ---
+
+  4.9 DATA FLOW DIAGRAM
+  ----------------------
+
+  [User Browser]
+       │
+       ▼  HTTP GET /
+  [Express Static] ──► index.html / login.html / admin.html
+       │
+       ▼  HTTP POST /api/auth/login
+  [Auth Route Handler]
+       │── reads ──► [MySQL: users table]
+       │── returns ─► JWT Token
+       │
+       ▼  HTTP GET /api/products (with JWT header)
+  [authenticateToken Middleware]
+       │── validates JWT
+       └──► [Products Route Handler]
+                 │── reads ──► [In-Memory: products array]
+                 └──► JSON Response → [Browser renders product cards]
+       │
+       ▼  HTTP POST /api/orders
+  [Orders Route Handler]
+       │── writes ──► [In-Memory: orders Map]
+       │── triggers ─► [Notification created for user]
+       └──► JSON Response → [Browser shows order confirmation]
+       │
+       ▼  HTTP GET /api/recommendations
+  [Recommendations Handler]
+       │── reads ──► [In-Memory: orders Map] (user history)
+       │── scores ──► [In-Memory: products array]
+       └──► Top-N scored products → [Browser renders recommendation row]
+
+  ---
+
+  4.10 API ENDPOINT SUMMARY
+  --------------------------
+
+  AUTH:
+    POST   /api/auth/signup            Register new user
+    POST   /api/auth/login             Login, receive JWT
+    GET    /api/auth/me                Fetch current user profile
+    PUT    /api/auth/profile           Update name/email/password
+
+  PRODUCTS:
+    GET    /api/products               List (filter, sort, paginate)
+    GET    /api/products/:id           Product details + reviews
+    GET    /api/products/search-suggestions  Autocomplete search
+    POST   /api/products               Add product [Admin]
+    PUT    /api/products/:id           Edit product [Admin]
+    DELETE /api/products/:id           Remove product [Admin]
+
+  ORDERS:
+    POST   /api/orders                 Place order
+    GET    /api/orders                 User order history
+    GET    /api/orders/:id             Order detail
+    PUT    /api/orders/:id/cancel      Cancel order
+    POST   /api/orders/:id/return      Submit return request
+
+  CART:
+    GET    /api/cart                   Get cart items
+    POST   /api/cart                   Add item to cart
+    PUT    /api/cart/:productId        Update item quantity
+    DELETE /api/cart/:productId        Remove item
+
+  WISHLIST:
+    GET    /api/wishlist               Get wishlist
+    POST   /api/wishlist               Add to wishlist
+    DELETE /api/wishlist/:productId    Remove from wishlist
+
+  NOTIFICATIONS:
+    GET    /api/notifications          Get user notifications
+    PUT    /api/notifications/:id/read Mark as read
+
+  ADMIN:
+    GET    /api/admin/stats            Dashboard analytics
+    GET    /api/admin/users            All users
+    PUT    /api/admin/users/:id/block  Block/unblock user
+    GET    /api/admin/returns          All return requests
+    PUT    /api/admin/returns/:id      Approve/reject return
+    GET    /api/admin/fraud-logs       Fraud activity log
+    GET    /api/recommendations        AI recommendations (authenticated)
+
+================================================================================
+END OF DOCUMENT
+================================================================================
